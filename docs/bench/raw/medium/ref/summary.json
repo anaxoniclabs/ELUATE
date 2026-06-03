@@ -1,0 +1,1 @@
+{"mode": "reference", "device": "mps", "sample_rate": 48000, "input_samples": 41639323, "input_seconds": 867.4858958333333, "model_load_seconds": 2.6024294999660924, "audio_load_seconds": 0.5016063749790192, "demix_seconds": 492.009371916065, "write_seconds": 0.8037138329818845, "wall_seconds": 496.68277033302}

@@ -1,0 +1,146 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Model checkpoints - large binary files
+models/*.ckpt
+models/*.pt
+models/*.pth
+models/*.bin
+*.ckpt
+*.pt
+*.pth
+
+# Temporary processing files
+temp/
+tmp/
+*.wav
+*.mp4
+*.mp3
+*.m4a
+# Keep test fixtures even though the blanket rules above would ignore them.
+# The `/**` recurses so nested fixture directories also work; `!tests/fixtures/*`
+# alone only covers the top level.
+!tests/fixtures/
+!tests/fixtures/**
+
+# Eluate output directory (user's Documents)
+# Output files are in ~/Documents/ELUATE/
+
+# Local config overrides
+config/local_*.yaml
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+
+# Log files
+*.log
+logs/
+
+# Eluate-specific
+# Local telemetry / cache (user dir is outside repo; kept here defensively)
+.eluate/
+# Per-repo test artifacts
+test_video.mp4
+
+# Local Claude Code context (kept on disk, never pushed)
+CLAUDE.md
+.claude/
+
+# Internal planning / project-management docs (kept locally, never pushed)
+docs/api-issues/
+docs/api-prd.md
+docs/pypi-publishing.md

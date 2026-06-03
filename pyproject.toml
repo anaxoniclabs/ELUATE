@@ -1,0 +1,172 @@
+[project]
+name = "eluate"
+version = "0.0.1"
+description = "Remove background music from videos - for accessibility and personal use"
+readme = "README.md"
+requires-python = ">=3.10"
+# PEP 639 license declaration: SPDX expression + license-files glob.
+# The bundled eluate/_vendor/mss_training/LICENSE is shipped via
+# package-data (see [tool.setuptools.package-data]) and does not need
+# to be listed here.
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    {name = "anaxoniclabs"}
+]
+keywords = [
+    "video",
+    "audio",
+    "music-removal",
+    "documentary",
+    "ai",
+    "bandit",
+    "accessibility",
+    "audio-processing",
+    "source-separation",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    # License is declared via PEP 639 SPDX expression above — the
+    # corresponding classifier is deprecated and intentionally omitted.
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Sound/Audio :: Analysis",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    # Core CLI & UI
+    "rich>=13.0.0",
+    # Audio processing
+    "torch>=2.1.0",
+    "torchaudio>=2.1.0",
+    "numpy>=1.24.0",
+    "scipy>=1.11.0",
+    "librosa>=0.10.0",
+    "soundfile>=0.12.0",
+    "pyyaml>=6.0",
+    # Bandit v2 model components
+    "einops>=0.7.0",
+    "rotary-embedding-torch>=0.5.0",
+    "transformers>=4.35.0",
+    "huggingface-hub>=0.23.0",
+    # Vendor dependencies (MSS-Training inference)
+    "omegaconf>=2.2.0",
+    "ml-collections>=1.0.0",
+    "tqdm>=4.60.0",
+    "beartype>=0.14.0",
+    "spafe>=0.3.0",  # Filterbank utils pulled in by the vendor framework's import graph
+]
+
+[project.urls]
+Homepage          = "https://github.com/anaxoniclabs/ELUATE"
+Repository        = "https://github.com/anaxoniclabs/ELUATE"
+Issues            = "https://github.com/anaxoniclabs/ELUATE/issues"
+Documentation     = "https://github.com/anaxoniclabs/ELUATE/blob/main/docs/api.md"
+Changelog         = "https://github.com/anaxoniclabs/ELUATE/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.4.0",
+    "mypy>=1.0.0",
+]
+# CPU-only extras for users on older Macs or systems without CUDA/MPS.
+# Installing this extra pins torch wheels without bundled CUDA. Use
+# ``pip install 'eluate[cpu]'`` for a ~1 GB smaller install footprint.
+cpu = [
+    "torch>=2.1.0",
+    "torchaudio>=2.1.0",
+]
+train = [
+    # Only needed if training models (not for CLI usage)
+    "wandb>=0.15.0",
+    "auraloss>=0.4.0",
+    "pytorch-lightning>=2.0.0",
+    "accelerate>=0.25.0",
+    "loralib>=0.1.0",
+]
+
+[project.scripts]
+eluate = "eluate.cli:main"
+
+[build-system]
+# PEP 639 license expression + license-files require setuptools 77+.
+requires = ["setuptools>=77.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["eluate*"]
+# Explicit: never package the top-level vendored submodule into the wheel —
+# it's a separate install concern and shouldn't ride inside the distribution.
+# The runtime ships the slim eluate/_vendor/ subset instead.
+exclude = ["vendor*", "tests*", "docs*", "scripts*"]
+
+# Ship the upstream LICENSE and attribution NOTICE next to the bundled
+# bandit_v2 code. Required by MIT redistribution terms.
+# Ship the bundled model config YAML so a `pip install eluate` can find
+# it via importlib.resources without a separate install step.
+[tool.setuptools.package-data]
+"eluate._vendor.mss_training" = ["LICENSE", "NOTICE"]
+"eluate.configs" = ["*.yaml"]
+
+[tool.bandit]
+# B301 (pickle) / B614 (torch.load): we use torch.load(weights_only=False)
+#   with SHA-256 gating — see the explicit note at the torch.load call
+#   site in eluate/core/separator.py.
+# B404 / B603 (subprocess): all subprocess calls are list-argv, no shell=True.
+# B607 (partial executable path): ffmpeg and vm_stat are resolved via PATH
+#   on purpose — we want the user's installed binary, not a hard-coded path.
+# B110 (try/except/pass): telemetry and device-detection fall back silently
+#   on any failure by design (must never break a run).
+# B310 (urlopen): URLs are pinned constants in eluate/utils/paths.py and
+#   every downloaded file is SHA-256-verified via eluate/utils/download.py.
+skips = ["B101", "B110", "B301", "B310", "B404", "B603", "B607", "B614"]
+exclude_dirs = ["eluate/_vendor"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+# eluate/_vendor/ is a frozen third-party copy shipped as-is.
+extend-exclude = ["eluate/_vendor"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]  # line-length enforced by formatter, not linter
+
+[tool.ruff.lint.per-file-ignores]
+# warnings.filterwarnings() must precede imports to suppress spurious logs
+"eluate/cli.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_return_any = false
+check_untyped_defs = true
+# vendor/ contains third-party code we don't control;
+# eluate/_vendor/ is a frozen subset of the same shipped in the wheel.
+exclude = ["vendor/", "eluate/_vendor/"]
+
+# ``exclude`` only stops mypy from picking these as roots — it still
+# follows first-party imports *into* the vendored package, flooding the
+# report with ~20 third-party errors that bury the real ones in our code.
+# ``follow_imports = skip`` makes mypy treat the vendored module as opaque
+# so only first-party type errors surface.
+[[tool.mypy.overrides]]
+module = "eluate._vendor.*"
+follow_imports = "skip"
+ignore_errors = true

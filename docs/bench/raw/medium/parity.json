@@ -1,0 +1,41 @@
+{
+  "speech": {
+    "ref_path": "/home/runner/eluate-bench/runs/medium/ref/medium_speech.wav",
+    "eluate_path": "/home/runner/eluate-bench/runs/medium/eluate/medium_speech.wav",
+    "samples": 41639323,
+    "sample_rate": 48000,
+    "psnr_db": 84.23543521724716,
+    "max_abs_diff": 0.02382233738899231,
+    "rms_diff": 6.140847108326852e-05,
+    "ref_rms": 0.04220571368932724,
+    "eluate_rms": 0.04220552742481232,
+    "length_ref_samples": 41639323,
+    "length_eluate_samples": 41639323
+  },
+  "music": {
+    "ref_path": "/home/runner/eluate-bench/runs/medium/ref/medium_music.wav",
+    "eluate_path": "/home/runner/eluate-bench/runs/medium/eluate/medium_music.wav",
+    "samples": 41639323,
+    "sample_rate": 48000,
+    "psnr_db": 83.89535130700227,
+    "max_abs_diff": 0.027363579720258713,
+    "rms_diff": 6.386051245499402e-05,
+    "ref_rms": 0.04142092168331146,
+    "eluate_rms": 0.041420768946409225,
+    "length_ref_samples": 41639323,
+    "length_eluate_samples": 41639323
+  },
+  "sfx": {
+    "ref_path": "/home/runner/eluate-bench/runs/medium/ref/medium_sfx.wav",
+    "eluate_path": "/home/runner/eluate-bench/runs/medium/eluate/medium_sfx.wav",
+    "samples": 41639323,
+    "sample_rate": 48000,
+    "psnr_db": 88.68587789971073,
+    "max_abs_diff": 0.010088957846164703,
+    "rms_diff": 3.7860470911255106e-05,
+    "ref_rms": 0.017875315621495247,
+    "eluate_rms": 0.01787472516298294,
+    "length_ref_samples": 41639323,
+    "length_eluate_samples": 41639323
+  }
+}

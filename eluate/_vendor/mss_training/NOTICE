@@ -1,0 +1,14 @@
+eluate bundles a frozen subset of the Music-Source-Separation-Training
+framework by Roman Solovyev (ZFTurbo).
+
+Upstream:
+    https://github.com/ZFTurbo/Music-Source-Separation-Training
+
+Bundled subset (under eluate/_vendor/mss_training/):
+    - models/bandit_v2/        (Bandit v2 model implementation)
+    - utils/settings.py        (slim adaptation: load_config and the
+                                bandit_v2 branch of get_model_from_config)
+
+The upstream framework is licensed under the MIT License. See the
+LICENSE file in this directory for the full upstream copyright notice.
+The bundled subset is redistributed under the same MIT License terms.

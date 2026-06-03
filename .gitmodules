@@ -1,0 +1,4 @@
+[submodule "vendor/mss-training"]
+	path = vendor/mss-training
+	url = https://github.com/anaxoniclabs/mss-training-eluate.git
+	branch = eluate-inference
