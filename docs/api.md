@@ -22,6 +22,7 @@ print(result.video)  # PosixPath('.../documentary_eluted.mp4')
 | `DurationOutOfRange`                 | exception   | Input duration is zero, negative, or above the cap.  |
 | `InsufficientDiskSpace`              | exception   | Target filesystem lacks free space for the run.      |
 | `ModelNotInstalledError`             | exception   | Required checkpoint is not on this machine.          |
+| `FFmpegNotFoundError`                | exception   | FFmpeg is not installed or not on `PATH`.            |
 
 Everything else under `eluate.*` (`eluate.core`, `eluate.utils`,
 `eluate.ui`) is internal and may change in any release.
@@ -142,6 +143,7 @@ single file; use [`Session`](#class-eluate-session) for two or more.
   bypass with `force=True`.
 - `ModelNotInstalledError`: the chosen `checkpoint` is not on this
   machine. Run `eluate setup` once.
+- `FFmpegNotFoundError`: FFmpeg is not installed or not on `PATH`.
 - `PermissionError`: input not readable or output not writable.
 - `EluateError`: any other eluate-specific failure.
 
@@ -161,6 +163,13 @@ overrides** that win when both are set.
 `device` and `checkpoint` are session-locked: changing either would
 require reloading the model, so they cannot be overridden per call.
 Attempting to pass them to `Session.elute()` raises `TypeError`.
+
+A `Session` is **not thread-safe**: `.elute()` mutates shared pipeline
+state per call, so calls on one session must be serialised. Use a
+separate `Session` per thread for parallel work. Exiting the `with`
+block — or calling `Session.close()` — releases the model and frees
+accelerator memory; the session stays usable afterwards (the next
+`.elute()` reloads the model).
 
 ```python
 import eluate
@@ -263,7 +272,8 @@ re-package errors that already have the right Python name.
 | `DurationOutOfRange`        | Input duration is zero, negative, or above the supported cap.                | `force=True` |
 | `InsufficientDiskSpace`     | Target filesystem does not have enough free space.                           | `force=True` |
 | `ModelNotInstalledError`    | Required checkpoint is not on this machine. The API never auto-downloads.    | Run `eluate setup` once. |
-| `FileNotFoundError`         | Input video does not exist. *(stdlib, propagates unwrapped)*                 |        |
+| `FFmpegNotFoundError`       | FFmpeg is not installed or not on `PATH`.                                    | Install FFmpeg. |
+| `FileNotFoundError`         | Input video does not exist, or the bundled model config is missing. *(stdlib, propagates unwrapped)* |        |
 | `FileExistsError`           | An output path already exists and `overwrite=False`.                         | `overwrite=True` |
 | `PermissionError`           | The pipeline cannot read input or write output. *(stdlib, propagates unwrapped)* |    |
 

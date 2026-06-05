@@ -1,6 +1,6 @@
 [project]
 name = "eluate"
-version = "0.0.1"
+version = "0.0.2"
 description = "Remove background music from videos - for accessibility and personal use"
 readme = "README.md"
 requires-python = ">=3.10"

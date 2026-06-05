@@ -179,6 +179,16 @@ class EluatePipeline:
             )
         return self._separator
 
+    def close(self) -> None:
+        """Release the separator's model and free accelerator memory.
+
+        Idempotent. The pipeline stays usable afterwards: the next
+        ``process()`` lazily rebuilds the separator.
+        """
+        if self._separator is not None:
+            self._separator.close()
+            self._separator = None
+
     def process(
         self,
         video_path: Path,

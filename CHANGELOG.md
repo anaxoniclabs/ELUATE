@@ -6,6 +6,35 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and ELUATE adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 on the public surface defined in [`docs/api.md`](docs/api.md).
 
+## [0.0.2] - 2026-06-05
+
+### Fixed
+
+- **Python API no longer kills the host process.** When a checkpoint was
+  installed but FFmpeg (or the bundled model config) was missing,
+  `eluate.elute()` / `eluate.Session` reached a `sys.exit(1)` in the
+  preflight path — an uncatchable `SystemExit` that aborted the calling
+  script, server worker, or notebook kernel. The library path now raises
+  the documented typed exceptions instead; only the CLI still exits.
+- **`Session` now releases the model on teardown.** Exiting the `with`
+  block (or calling the new `Session.close()`) frees the model and
+  accelerator memory; previously it leaked until garbage collection.
+
+### Added
+
+- **`eluate.FFmpegNotFoundError`** (subclass of `EluateError`), raised by
+  the Python API when FFmpeg is absent from `PATH`.
+- **`Session.close()`** for explicit teardown; `Session.__exit__` calls it.
+- **CUDA inference tuning** - `configure_cuda_settings()` enables TF32
+  tensor-core matmuls and cuDNN autotuning on Ampere+ GPUs (e.g. the
+  Colab A100), a free inference speedup with negligible precision impact.
+  `eluate info` reports CUDA settings alongside MPS.
+
+### Changed
+
+- Documented `Session`'s sequential-only (not thread-safe) contract in
+  [`docs/api.md`](docs/api.md).
+
 ## [0.0.1] - 2026-06-03
 
 First release. Targets CUDA / Google Colab as the primary platform;
@@ -53,4 +82,5 @@ target.
 - Non-`multi` Bandit v2 checkpoints currently lack verified SHA-256
   digests.
 
+[0.0.2]: https://github.com/anaxoniclabs/ELUATE/releases/tag/v0.0.2
 [0.0.1]: https://github.com/anaxoniclabs/ELUATE/releases/tag/v0.0.1

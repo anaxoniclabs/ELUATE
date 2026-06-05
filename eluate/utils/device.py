@@ -82,6 +82,28 @@ def configure_mps_settings():
     os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
 
+def configure_cuda_settings():
+    """
+    Configure optimal CUDA settings for inference.
+
+    - TF32 tensor-core matmuls: a free speedup on Ampere+ GPUs (e.g. the
+      A100 on Colab) for the band-split convs and mask-estimation MLPs,
+      with negligible precision impact at inference.
+    - cuDNN autotuning (``benchmark``): streaming inference feeds
+      fixed-shape ``(batch, channels, chunk_size)`` chunks, so letting
+      cuDNN pick the best LSTM/conv algorithms once and reuse them pays
+      off across the run.
+
+    Safe to call unconditionally; a no-op when CUDA is unavailable.
+    """
+    if not torch.cuda.is_available():
+        return
+    torch.set_float32_matmul_precision("high")
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+    torch.backends.cudnn.benchmark = True
+
+
 def _meminfo_linux() -> dict:
     """Parse ``/proc/meminfo`` for memory stats on Linux (e.g. Colab).
 

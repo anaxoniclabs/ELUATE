@@ -223,12 +223,20 @@ def run_preflight(
     2. Config file resolved
     3. FFmpeg available
 
-    Calls sys.exit() on any hard failure.
+    ``download_if_missing=False`` selects *library mode* (used by the Python
+    API): every hard failure is raised as a catchable exception instead of
+    calling ``sys.exit()``, so the host process / notebook kernel survives.
+    In this mode:
 
-    When ``download_if_missing=False`` (used by the Python API), a missing
-    checkpoint raises ``eluate.ModelNotInstalledError`` instead of being
-    downloaded. The CLI keeps the default ``True`` so first-run downloads
-    continue to work.
+    - a missing checkpoint raises ``eluate.ModelNotInstalledError`` (instead
+      of being downloaded);
+    - a checkpoint digest mismatch raises ``eluate.EluateError``;
+    - a missing config raises ``FileNotFoundError`` (unwrapped, per the API
+      contract);
+    - a missing FFmpeg raises ``eluate.FFmpegNotFoundError``.
+
+    The CLI keeps the default ``download_if_missing=True``: first-run
+    downloads work and hard failures print a Rich panel then ``sys.exit(1)``.
     """
     if console is None:
         console = Console(quiet=True)
@@ -260,6 +268,11 @@ def run_preflight(
         config_path = get_config_path()
     except FileNotFoundError as e:
         logger.error("Config not found: %s", e)
+        # Library mode: let the stdlib FileNotFoundError propagate unwrapped,
+        # matching the API's "stdlib exceptions keep their Python name"
+        # contract. Only the CLI turns it into a Rich panel + sys.exit().
+        if not download_if_missing:
+            raise
         console.print(error_panel("Config not found", str(e)))
         sys.exit(1)
 
@@ -274,6 +287,16 @@ def run_preflight(
             install_hint = "Install via your package manager, e.g.:\n  apt-get install ffmpeg"
         else:
             install_hint = "Install FFmpeg and ensure it is on your PATH."
+        # Library mode: raise a typed eluate exception instead of killing the
+        # host process. A SystemExit here is uncatchable through the
+        # documented EluateError hierarchy and would abort a notebook cell or
+        # server worker outright.
+        if not download_if_missing:
+            from eluate.api import FFmpegNotFoundError
+
+            raise FFmpegNotFoundError(
+                f"FFmpeg is required but was not found on PATH. {install_hint}"
+            )
         console.print(
             error_panel(
                 "FFmpeg not found",

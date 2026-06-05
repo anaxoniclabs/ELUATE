@@ -19,6 +19,7 @@ except PackageNotFoundError:  # running from a source tree without an install
 from .api import (
     DurationOutOfRange,
     EluateError,
+    FFmpegNotFoundError,
     InsufficientDiskSpace,
     ModelNotInstalledError,
     Result,
@@ -30,6 +31,7 @@ from .cli import main
 __all__ = [
     "DurationOutOfRange",
     "EluateError",
+    "FFmpegNotFoundError",
     "InsufficientDiskSpace",
     "ModelNotInstalledError",
     "Result",

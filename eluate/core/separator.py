@@ -16,6 +16,7 @@ import torch
 
 from eluate.utils.device import (
     clear_device_cache,
+    configure_cuda_settings,
     configure_mps_settings,
     get_optimal_device,
 )
@@ -76,6 +77,7 @@ class BanditSeparator:
         self.arch = arch
         self.device_cache_clear_interval = max(0, int(device_cache_clear_interval))
 
+        configure_cuda_settings()
         if device is None:
             configure_mps_settings()
             self.device = get_optimal_device()
@@ -101,6 +103,15 @@ class BanditSeparator:
         if self._config is None:
             self._load_model()
         return self._config
+
+    def close(self) -> None:
+        """Release the loaded model and free accelerator memory.
+
+        Idempotent: a no-op if the model was never loaded. After calling
+        this, the next ``.model`` access lazily reloads from the checkpoint.
+        """
+        self._model = None
+        clear_device_cache(self.device)
 
     def _load_model(self):
         """Load Bandit v2 model from checkpoint."""

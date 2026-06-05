@@ -186,9 +186,9 @@ class EluateError(Exception):
     """Base exception for all eluate-specific failures.
 
     Subclasses (:class:`DurationOutOfRange`, :class:`InsufficientDiskSpace`,
-    :class:`ModelNotInstalledError`) cover the failure modes callers
-    typically want to react to specifically. Catching ``EluateError``
-    catches all of them.
+    :class:`ModelNotInstalledError`, :class:`FFmpegNotFoundError`) cover the
+    failure modes callers typically want to react to specifically. Catching
+    ``EluateError`` catches all of them.
 
     Stdlib exceptions (``FileNotFoundError``, ``PermissionError``,
     ``KeyboardInterrupt``) propagate **unwrapped** — eluate does not
@@ -217,6 +217,15 @@ class ModelNotInstalledError(EluateError):
 
     The API does not auto-download checkpoints. Run ``eluate setup`` to
     download them once, then re-run.
+    """
+
+
+class FFmpegNotFoundError(EluateError):
+    """FFmpeg is required but was not found on ``PATH``.
+
+    Eluate shells out to FFmpeg for audio extraction and muxing. Install
+    it (``brew install ffmpeg`` on macOS, ``apt-get install ffmpeg`` on
+    Debian/Ubuntu) and ensure it is on ``PATH``, then re-run.
     """
 
 
@@ -280,6 +289,13 @@ class Session:
     Constructor kwargs (``output_dir``, ``overwrite``, ``force``) act as
     session-level defaults. ``Session.elute()`` accepts the same kwargs
     as per-call overrides that win when both are set.
+
+    A ``Session`` is **not** safe for concurrent use: ``elute()`` mutates
+    shared pipeline state (force, codec, progress callbacks) per call, so
+    calls must be serialised. Use one ``Session`` per thread for parallel
+    work. ``close()`` (called automatically on ``__exit__``) releases the
+    model and frees accelerator memory; the session stays usable after
+    ``close()`` — the next ``elute()`` reloads the model.
     """
 
     def __init__(
@@ -320,7 +336,17 @@ class Session:
         return self
 
     def __exit__(self, exc_type, exc, tb) -> None:
+        self.close()
         return None
+
+    def close(self) -> None:
+        """Release the model and free accelerator memory.
+
+        Idempotent. The session stays usable: the next ``elute()`` reloads
+        the model. Called automatically when used as a context manager.
+        """
+        if self._pipeline is not None:
+            self._pipeline.close()
 
     def elute(
         self,

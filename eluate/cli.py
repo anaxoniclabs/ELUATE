@@ -510,8 +510,13 @@ def cmd_info(console: Console) -> None:
     import torch
 
     # Device
-    from .utils.device import configure_mps_settings, get_optimal_device
+    from .utils.device import (
+        configure_cuda_settings,
+        configure_mps_settings,
+        get_optimal_device,
+    )
 
+    configure_cuda_settings()
     configure_mps_settings()
     device = get_optimal_device()
 

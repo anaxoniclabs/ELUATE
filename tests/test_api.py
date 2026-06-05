@@ -1492,6 +1492,59 @@ class TestDeviceKwarg:
             with pytest.raises(TypeError, match="locked at Session construction"):
                 session.elute(video, device="cuda")  # type: ignore[call-arg]
 
+
+class TestSessionTeardown:
+    """Exiting a ``Session`` (or calling ``close()``) releases the model.
+
+    The ``elute()`` one-shot docstring promises it "tears down"; this pins
+    that ``__exit__`` actually frees the pipeline instead of leaking the
+    model until GC.
+    """
+
+    def test_context_exit_closes_pipeline(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        video = tmp_path / "v.mp4"
+        video.touch()
+
+        with (
+            patch("eluate.api.run_preflight") as mock_preflight,
+            patch("eluate.core.pipeline.EluatePipeline") as MockPipeline,
+        ):
+            mock_preflight.return_value = _fake_preflight(tmp_path)
+            pipeline = _make_pipeline_mock(tmp_path / "v_eluted.mp4")
+            MockPipeline.return_value = pipeline
+
+            with Session() as session:
+                session.elute(video)
+            # __exit__ must have torn the model down.
+            assert pipeline.close.call_count == 1
+
+    def test_close_is_idempotent_without_pipeline(self):
+        """Closing a session that never ran (no pipeline built) is a no-op,
+        not an AttributeError."""
+        session = Session()
+        session.close()  # must not raise
+        session.close()
+
+    def test_elute_one_shot_tears_down(self, tmp_path, monkeypatch):
+        """The module-level ``elute()`` wraps Session in a ``with`` block, so
+        the pipeline is closed before it returns."""
+        monkeypatch.chdir(tmp_path)
+        video = tmp_path / "v.mp4"
+        video.touch()
+
+        with (
+            patch("eluate.api.run_preflight") as mock_preflight,
+            patch("eluate.core.pipeline.EluatePipeline") as MockPipeline,
+        ):
+            mock_preflight.return_value = _fake_preflight(tmp_path)
+            pipeline = _make_pipeline_mock(tmp_path / "v_eluted.mp4")
+            MockPipeline.return_value = pipeline
+
+            elute(video)
+
+        assert pipeline.close.call_count == 1
+
     def test_forced_cpu_constructs_separator_on_cpu(self, tmp_path, monkeypatch):
         """End-to-end: with ``device="cpu"``, the lazy separator load
         produces a torch.device("cpu"), regardless of MPS/CUDA presence.

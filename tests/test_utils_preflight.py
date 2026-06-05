@@ -83,3 +83,73 @@ def test_api_preflight_rejects_existing_mismatched_digest_before_ffmpeg(tmp_path
         run_preflight("multi", download_if_missing=False)
 
     assert ffmpeg_checked is False
+
+
+def _install_valid_checkpoint(tmp_path, monkeypatch):
+    """Plant an installed, integrity-passing checkpoint so preflight gets
+    past the checkpoint step and on to config/FFmpeg."""
+    ckpt = tmp_path / "checkpoint-multi.ckpt"
+    ckpt.write_bytes(b"good")
+    monkeypatch.setattr(
+        "eluate.utils.preflight.get_checkpoint_path",
+        lambda key, model="bandit-v2": ckpt,
+    )
+    # Empty digest → integrity check is skipped (matches undeclared-SHA path).
+    monkeypatch.setattr(
+        "eluate.utils.preflight.get_checkpoint_sha256",
+        lambda key, model="bandit-v2": "",
+    )
+
+
+def test_library_mode_missing_ffmpeg_raises_not_systemexit(tmp_path, monkeypatch):
+    """The headline contract bug: in library mode (download_if_missing=False)
+    a missing FFmpeg must raise the typed FFmpegNotFoundError, never
+    SystemExit — otherwise it is uncatchable through EluateError and would
+    abort a notebook cell or server worker."""
+    _install_valid_checkpoint(tmp_path, monkeypatch)
+    config = tmp_path / "bandit_v2.yaml"
+    config.write_text("dummy: true")
+    monkeypatch.setattr("eluate.utils.preflight.get_config_path", lambda: config)
+    monkeypatch.setattr(
+        "eluate.core.extractor.check_ffmpeg_available",
+        lambda: False,
+    )
+
+    with pytest.raises(eluate.FFmpegNotFoundError):
+        run_preflight("multi", download_if_missing=False)
+
+    # FFmpegNotFoundError is catchable through the documented hierarchy.
+    assert issubclass(eluate.FFmpegNotFoundError, eluate.EluateError)
+
+
+def test_library_mode_missing_config_raises_file_not_found(tmp_path, monkeypatch):
+    """In library mode a missing config propagates as an unwrapped
+    FileNotFoundError (per the API's stdlib-exceptions contract), not
+    SystemExit."""
+    _install_valid_checkpoint(tmp_path, monkeypatch)
+
+    def _no_config():
+        raise FileNotFoundError("config gone")
+
+    monkeypatch.setattr("eluate.utils.preflight.get_config_path", _no_config)
+
+    with pytest.raises(FileNotFoundError, match="config gone"):
+        run_preflight("multi", download_if_missing=False)
+
+
+def test_cli_mode_missing_ffmpeg_still_exits(tmp_path, monkeypatch):
+    """CLI mode (default download_if_missing=True) keeps the sys.exit(1)
+    behaviour so first-run UX and the Rich panel are unchanged."""
+    _install_valid_checkpoint(tmp_path, monkeypatch)
+    config = tmp_path / "bandit_v2.yaml"
+    config.write_text("dummy: true")
+    monkeypatch.setattr("eluate.utils.preflight.get_config_path", lambda: config)
+    monkeypatch.setattr(
+        "eluate.core.extractor.check_ffmpeg_available",
+        lambda: False,
+    )
+
+    with pytest.raises(SystemExit) as excinfo:
+        run_preflight("multi", download_if_missing=True)
+
+    assert excinfo.value.code == 1
